@@ -21,6 +21,7 @@ module "ec2" {
   ami             = "ami-0f7204385566b32d0"
   subnet_id       = module.vpc.public_subnets[0]
   associate_public_ip_address = true
+  vpc_security_group_ids = [ aws_security_group.podinfo_sg.id ]
 
   user_data = <<-EOF
               #!/bin/bash
@@ -31,7 +32,30 @@ module "ec2" {
               EOF
 }
 
-resource "aws_security_group_rule" "ssh_inbound" {
+resource "aws_security_group" "podinfo_sg" {
+  name = "podinfo_sg"
+  vpc_id = module.vpc.vpc_id
+  ingress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port = 80
+    to_port = 80
+    protocol = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+}
+
+/* resource "aws_security_group_rule" "ssh_inbound" {
   type              = "ingress"
   from_port         = 22
   to_port           = 22
@@ -56,7 +80,7 @@ resource "aws_security_group_rule" "all_outbound" {
   protocol          = "tcp"
   security_group_id = module.vpc.default_security_group_id
   cidr_blocks      = ["0.0.0.0/0"]
-}
+} */
 
 output "public_ip" {
   value = module.ec2.public_ip
